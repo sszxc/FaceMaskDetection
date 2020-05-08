@@ -1,7 +1,10 @@
 # -*- coding:utf-8 -*-
 import cv2
+import os
+import sys
 import time
 import argparse
+import datetime
 
 import numpy as np
 from PIL import Image
@@ -28,6 +31,7 @@ id2class = {0: 'Mask', 1: 'NoMask'}
 
 
 def inference(image,
+              image_name, # 加了一个文件名参数
               conf_thresh=0.5,
               iou_thresh=0.4,
               target_shape=(160, 160),
@@ -87,7 +91,8 @@ def inference(image,
         output_info.append([class_id, conf, xmin, ymin, xmax, ymax])
 
     if show_result:
-        Image.fromarray(image).show()
+        # Image.fromarray(image).show()
+        Image.fromarray(image).save("output/"+image_name) # 改成保存文件
     return output_info
 
 
@@ -130,6 +135,11 @@ def run_on_video(video_path, output_video_name, conf_thresh):
 
 
 if __name__ == "__main__":
+    # my demo
+    # python tensorflow_infer.py  --img-path input/
+    # python tensorflow_infer.py  --img-path img/demo2.jpg
+    # python tensorflow_infer.py  --img-path D:/ComputerVision/FaceMaskDetection/img/demo2.jpg
+
     parser = argparse.ArgumentParser(description="Face Mask Detection")
     parser.add_argument('--img-mode', type=int, default=1, help='set 1 to run on image, 0 to run on video.')
     parser.add_argument('--img-path', type=str, help='path to your image.')
@@ -137,10 +147,32 @@ if __name__ == "__main__":
     # parser.add_argument('--hdf5', type=str, help='keras hdf5 file')
     args = parser.parse_args()
     if args.img_mode:
-        imgPath = args.img_path
-        img = cv2.imread(imgPath)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        inference(img, show_result=True, target_shape=(260, 260))
+        # 原版
+        # imgPath = args.img_path
+        # img = cv2.imread(imgPath)
+        # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        # inference(img, show_result=True, target_shape=(260, 260))
+
+        # 读取文件夹
+        amout = 0
+        amout_max = 999
+        dirname = args.img_path
+        for filename in os.listdir(dirname):  # listdir的参数是文件夹的路径
+            starttime = datetime.datetime.now() # 计时
+            filefullname = dirname +'/'+ filename
+            img = cv2.imread(filefullname)
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            inference(img, filename, show_result=True, target_shape=(260, 260))
+            amout += 1
+
+            endtime = datetime.datetime.now()
+            print("测试" + filename + " 耗时", end='')
+            print(endtime - starttime)
+
+            if amout >= amout_max:  # 控制读取图片的数量
+                break
+        print("finish " + str(amout) + " images from \"" + dirname + '\"')
+        
     else:
         video_path = args.video_path
         if args.video_path == '0':
